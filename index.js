@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const fs = require('fs');
 const prompt = require('prompt');
 var RandExp = require('randexp');
-const ProxyAgent = require('socks-proxy-agent');
+var { SocksProxyAgent } = require('socks-proxy-agent');
 const codes = fs.readFileSync('CustomCodes.txt', 'utf-8').replace(/\r/gi, '').split('\n');
 var proxies = fs.readFileSync('proxies.txt', 'utf-8').replace(/\r/gi, '').split('\n');
 const config = require("./config.json");
@@ -17,7 +17,7 @@ process.on('uncaughtException', err => {});
 process.on('unhandledRejection', err => {});
 process.warn = () => {};
 
-codegen = function() {
+function codegen() {
     var code = new RandExp(/^([a-zA-Z0-9]{16})$/).gen();
     return code;
 }
@@ -27,9 +27,11 @@ function write(content, file) {
 }
 
 function claim(nitro) {
-    request.post(`https://discordapp.com/api/v6/entitlements/gift-codes/${code}/redeem`, {
+    request.post(`https://discordapp.com/api/v6/entitlements/gift-codes/${nitro}/redeem`), {
         headers: {
-            "Authorization": config.token
+            "Authorization": config.token,
+            "Content-Type": "application/json",
+            'payment_source_id': 'null'
         }
     }, function(error, response, body) {
         if (body.includes("This gift has been redeemed already")) {
@@ -41,12 +43,12 @@ function claim(nitro) {
         } else {
             console.log(chalk.hex("#FFA500")('[WARN] An error occured'));
         }
-    })
+    }
 }
 
 function check(nitro) {
     var proxy = proxies[Math.floor(Math.random() * proxies.length)];
-    var agent = new ProxyAgent(`${config.proxyType}://${proxy}`);
+    const agent = new SocksProxyAgent(`${config.proxyType}://${proxy}`);
     request({
         method: "GET",
         url: `https://discordapp.com/api/v6/entitlements/gift-codes/${nitro}?with_application=false&with_subscription_plan=true`,
